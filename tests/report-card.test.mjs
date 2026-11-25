@@ -369,3 +369,56 @@ test('verify catches SVG badge tampering and validates Ed25519 signatures', () =
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('GitHub Action runner writes all 4 artifacts, step summary, outputs, and enforces min-score', () => {
+  const dir = makeFixture({ 'README.md': '# Action Test App' });
+  const outDir = path.join(dir, 'action-out');
+  const summaryPath = path.join(dir, 'step-summary.md');
+  const ghOutPath = path.join(dir, 'gh-output.txt');
+  const actionRunner = path.resolve(__dirname, '..', 'scripts', 'run-action.mjs');
+
+  try {
+    execFileSync(process.execPath, [actionRunner], {
+      env: {
+        ...process.env,
+        DSRC_TARGET: dir,
+        DSRC_APP_NAME: 'Action Demo',
+        DSRC_OUT_DIR: outDir,
+        DSRC_WRITE_SUMMARY: 'true',
+        GITHUB_STEP_SUMMARY: summaryPath,
+        GITHUB_OUTPUT: ghOutPath,
+      },
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    assert.ok(fs.existsSync(path.join(outDir, 'security-report-card.html')));
+    assert.ok(fs.existsSync(path.join(outDir, 'security-report-card.md')));
+    assert.ok(fs.existsSync(path.join(outDir, 'security-report-card.json')));
+    assert.ok(fs.existsSync(path.join(outDir, 'security-badge.svg')));
+    assert.match(fs.readFileSync(summaryPath, 'utf8'), /Desktop Security Report Card — Action Demo/);
+    const ghOut = fs.readFileSync(ghOutPath, 'utf8');
+    assert.match(ghOut, /^score=\d+/m);
+    assert.match(ghOut, /^grade=[A-F][+-]?/m);
+
+    // Confirm min-score threshold failure exits 2
+    let code = 0;
+    try {
+      execFileSync(process.execPath, [actionRunner], {
+        env: {
+          ...process.env,
+          DSRC_TARGET: dir,
+          DSRC_OUT_DIR: outDir,
+          DSRC_MIN_SCORE: '99',
+        },
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } catch (err) {
+      code = err.status;
+    }
+    assert.equal(code, 2);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

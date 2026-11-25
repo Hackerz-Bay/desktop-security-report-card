@@ -1,0 +1,77 @@
+name: Desktop Security Report Card
+description: Grade any desktop application repository (and optional signed binary) with the stack-aware Desktop Security Report Card, writing a Job Summary and tamper-evident HTML/SVG/JSON artifacts.
+author: Hackerz Bay
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  target:
+    description: Path to the desktop application repository or directory to scan
+    required: false
+    default: "."
+  app-name:
+    description: Optional display name printed on the report card and shield badge
+    required: false
+    default: ""
+  binary:
+    description: Optional path to a compiled installer or executable (.exe, .msi, .dmg, .app) for read-only SHA-256 and native OS signature verification
+    required: false
+    default: ""
+  out-dir:
+    description: Directory where security-report-card.{html,md,json} and security-badge.svg are written
+    required: false
+    default: ".security-report-card"
+  min-score:
+    description: Optional minimum overall score (0-100); fails the step if the score is below this threshold
+    required: false
+    default: ""
+  sign-key:
+    description: Optional Ed25519 private key (PEM) for cryptographically signing the badge and report card digest
+    required: false
+    default: ""
+  write-summary:
+    description: Append the Markdown report card to the GitHub Actions Job Summary
+    required: false
+    default: "true"
+
+outputs:
+  score:
+    description: Overall security score (0-100)
+    value: ${{ steps.grade.outputs.score }}
+  grade:
+    description: Overall letter grade (A+ to F)
+    value: ${{ steps.grade.outputs.grade }}
+  gold-stars:
+    description: Number of verified Gold Stars earned
+    value: ${{ steps.grade.outputs.gold_stars }}
+  html-path:
+    description: Path to the generated self-contained HTML report card
+    value: ${{ steps.grade.outputs.html_path }}
+  svg-path:
+    description: Path to the generated standalone verifiable SVG shield badge
+    value: ${{ steps.grade.outputs.svg_path }}
+  markdown-path:
+    description: Path to the generated Markdown report card
+    value: ${{ steps.grade.outputs.markdown_path }}
+  json-path:
+    description: Path to the generated machine-readable JSON report card
+    value: ${{ steps.grade.outputs.json_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run Desktop Security Report Card grader
+      id: grade
+      shell: bash
+      env:
+        DSRC_ACTION_PATH: ${{ github.action_path }}
+        DSRC_TARGET: ${{ inputs.target }}
+        DSRC_APP_NAME: ${{ inputs.app-name }}
+        DSRC_BINARY: ${{ inputs.binary }}
+        DSRC_OUT_DIR: ${{ inputs.out-dir }}
+        DSRC_MIN_SCORE: ${{ inputs.min-score }}
+        DSRC_SIGN_KEY: ${{ inputs.sign-key }}
+        DSRC_WRITE_SUMMARY: ${{ inputs.write-summary }}
+      run: node "${DSRC_ACTION_PATH}/scripts/run-action.mjs"

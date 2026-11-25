@@ -95,6 +95,28 @@ Framework-specific controls activate **only** when that stack is detected so app
 
 ---
 
+## CI / Pipeline Integration
+
+Drop the built-in GitHub Action directly into your PR or release workflow:
+
+```yaml
+- uses: Hackerz-Bay/desktop-security-report-card@v1
+  with:
+    target: .
+    app-name: ${{ github.event.repository.name }}
+    # binary: dist/MyApp-Setup.exe   # Optional: live OS Authenticode / codesign check
+    # min-score: "80"                # Optional: fail CI below threshold
+    write-summary: "true"
+```
+
+See **[docs/CI-INTEGRATION.md](./docs/CI-INTEGRATION.md)** for full copy-paste examples covering:
+- **GitHub Actions** (PR Job Summary, HTML/SVG artifact upload, signed release binary verification)
+- **Ed25519 certified badge signing** (`--sign-key` / `verify --public-key`)
+- **Azure DevOps Pipelines** and **GitLab CI**
+- **Exit codes & automated badge verification**
+
+---
+
 ## Use With AI Coding Agents (`SKILL.md`)
 
 This repository includes a portable [`SKILL.md`](./SKILL.md) so teams using **Antigravity, Claude Code, Cursor, or Codex** can run a guided Desktop Security Report Card audit directly inside their workspace using the exact same rubric and broad-outcome policy.
