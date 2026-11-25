@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.html
+!examples/*.html
+.DS_Store
+Thumbs.db

@@ -1,0 +1,332 @@
+{
+  "version": "1.0.0",
+  "philosophy": {
+    "summary": "Grade desktop applications transparently against verifiable engineering controls. Binary supply-chain items state the exact requirement; architectural and vulnerability controls state what is graded and what needs to be fixed without prescriptive step-by-step fix recipes.",
+    "guidancePolicy": {
+      "binary": "Concrete yes/no operational control (for example: code signing certificate, published checksums, build provenance, security.txt).",
+      "outcome": "General security boundary or attack-vector control. Reports the graded property, risk surface, and broad security outcome required — never step-by-step implementation instructions."
+    }
+  },
+  "domains": [
+    {
+      "id": "supply-chain",
+      "name": "Binary Identity & Supply Chain",
+      "weight": 25,
+      "description": "Cryptographic proof of publisher identity, artifact integrity, build provenance, and dependency hygiene."
+    },
+    {
+      "id": "isolation",
+      "name": "Runtime Isolation & Sandboxing",
+      "weight": 20,
+      "description": "Process sandboxing, renderer isolation, binary hardening, and safe execution boundaries."
+    },
+    {
+      "id": "privileges",
+      "name": "Privileges, Installers & OS Boundaries",
+      "weight": 15,
+      "description": "Least-privilege execution, locked file-system ACLs, and hardened installer/service boundaries."
+    },
+    {
+      "id": "secrets-network",
+      "name": "Secrets, Data & Local Networking",
+      "weight": 15,
+      "description": "Secret storage hygiene, loopback-scoped local APIs, and strict TLS validation."
+    },
+    {
+      "id": "auto-update",
+      "name": "Auto-Update Integrity",
+      "weight": 10,
+      "description": "Authenticated, integrity-verified update delivery with downgrade protection."
+    },
+    {
+      "id": "verification",
+      "name": "Verification & Automated Testing",
+      "weight": 15,
+      "description": "Automated regression coverage and continuous CI security scanning."
+    }
+  ],
+  "aiEraWatchlist": [
+    {
+      "id": "unsigned-binary",
+      "title": "Unsigned or Unknown-Publisher Installers",
+      "redFlag": "SmartScreen or Gatekeeper warns 'Unknown publisher', or the installer has no valid timestamped signature.",
+      "whyItMatters": "AI makes convincing clone apps and trojanized installers trivial to generate; cryptographic code signing ties every byte to a verified publisher identity."
+    },
+    {
+      "id": "unverified-updates",
+      "title": "Silent Updates Without Integrity Checks",
+      "redFlag": "The app downloads executables or scripts over plain HTTP or runs updates without verifying publisher signatures and checksums.",
+      "whyItMatters": "A hijacked update channel turns a previously clean desktop app into an instant remote code execution vector."
+    },
+    {
+      "id": "overprivileged-install",
+      "title": "World-Writable Directories Under Elevated Services",
+      "redFlag": "A background service runs as SYSTEM/root while reading executables, configs, or secrets from folders any local user can modify.",
+      "whyItMatters": "Standard-user write access to elevated service assets creates a direct local privilege escalation path."
+    },
+    {
+      "id": "exposed-local-ports",
+      "title": "Unauthenticated Local Servers Bound to All Interfaces",
+      "redFlag": "A desktop helper binds to 0.0.0.0 or accepts cross-origin requests from any website in your browser.",
+      "whyItMatters": "Malicious web pages or LAN devices can silently drive local desktop APIs if loopback binding and origin checks are missing."
+    },
+    {
+      "id": "no-provenance",
+      "title": "Zero Transparency on Tests, Checksums, or Build Origin",
+      "redFlag": "No published SHA-256 checksums, no build provenance, no security contact, and no evidence of automated security testing.",
+      "whyItMatters": "In an era of AI-generated slopware, verifiable engineering receipts separate maintained software from opaque binaries."
+    }
+  ],
+  "controls": [
+    {
+      "id": "SC-01",
+      "domain": "supply-chain",
+      "title": "Code Signing & Trusted Timestamping",
+      "goldStar": true,
+      "goldStarLabel": "Verified Code Signing",
+      "stacks": ["generic"],
+      "weight": 8,
+      "guidanceType": "binary",
+      "gradedProperty": "Distributable executables and installers are cryptographically signed with a trusted publisher certificate (such as Azure Artifact Signing, EV Authenticode, or Apple Developer ID + Notarization) with an RFC 3161 trusted timestamp.",
+      "attackSurface": "Unsigned binaries trigger OS trust warnings and cannot be distinguished from tampered or impersonated installers.",
+      "whatToFix": "Sign all release binaries and installers with a trusted code-signing certificate (e.g., Azure Artifact Signing / EV Authenticode on Windows, Apple Developer ID + Notarization on macOS) and include a trusted timestamp."
+    },
+    {
+      "id": "SC-02",
+      "domain": "supply-chain",
+      "title": "Published Cryptographic Checksums",
+      "goldStar": true,
+      "goldStarLabel": "Published SHA-256 Checksums",
+      "stacks": ["generic"],
+      "weight": 5,
+      "guidanceType": "binary",
+      "gradedProperty": "Every release publishes verifiable SHA-256 checksums (such as SHA256SUMS.txt or a signed release manifest with per-artifact hashes).",
+      "attackSurface": "Users and mirrors cannot independently verify that a downloaded installer matches the publisher's release output.",
+      "whatToFix": "Publish a deterministic SHA-256 checksum file (such as SHA256SUMS.txt) or manifest hashes alongside every release download."
+    },
+    {
+      "id": "SC-03",
+      "domain": "supply-chain",
+      "title": "SLSA Build Provenance Attestations",
+      "goldStar": true,
+      "goldStarLabel": "SLSA Build Provenance",
+      "stacks": ["generic"],
+      "weight": 4,
+      "guidanceType": "binary",
+      "gradedProperty": "Release pipelines emit signed build provenance attestations tying shipped binary digests to the exact source commit and CI workflow.",
+      "attackSurface": "Without build provenance, downstream users cannot verify that a signed binary was built from audited source rather than a compromised developer machine.",
+      "whatToFix": "Emit signed SLSA build provenance attestations from CI for release artifacts."
+    },
+    {
+      "id": "SC-04",
+      "domain": "supply-chain",
+      "title": "Locked Dependencies & Vulnerability Scanning",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 5,
+      "guidanceType": "binary",
+      "gradedProperty": "Dependencies are pinned via committed lockfiles and scanned continuously for known CVEs.",
+      "attackSurface": "Unpinned dependency trees and unscanned packages expose desktop builds to supply-chain drift and known exploitable libraries.",
+      "whatToFix": "Commit deterministic dependency lockfiles and enable automated dependency vulnerability scanning in CI."
+    },
+    {
+      "id": "SC-05",
+      "domain": "supply-chain",
+      "title": "Vulnerability Disclosure Policy",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 3,
+      "guidanceType": "binary",
+      "gradedProperty": "A clear security reporting channel is published (SECURITY.md and/or /.well-known/security.txt).",
+      "attackSurface": "Security researchers lack a safe, documented channel to report vulnerabilities responsibly.",
+      "whatToFix": "Publish a SECURITY.md policy in the repository and a /.well-known/security.txt contact on the project website."
+    },
+    {
+      "id": "IS-01",
+      "domain": "isolation",
+      "title": "Electron Renderer Process Isolation",
+      "goldStar": true,
+      "goldStarLabel": "Isolated Electron Renderer",
+      "stacks": ["electron"],
+      "weight": 7,
+      "guidanceType": "outcome",
+      "gradedProperty": "Browser windows enforce strict separation between web content and Node.js/OS privileges (context isolation enabled, Node integration disabled, OS sandboxing active).",
+      "attackSurface": "Exposed Node.js APIs or shared JavaScript contexts let any renderer script injection escalate straight into arbitrary OS command execution.",
+      "whatToFix": "Ensure all Electron renderers run with strict context isolation, no direct Node.js integration, and sandboxing enabled, exposing only minimal validated IPC bridges."
+    },
+    {
+      "id": "IS-02",
+      "domain": "isolation",
+      "title": "Electron Web Security & Content Security Policy",
+      "goldStar": false,
+      "stacks": ["electron"],
+      "weight": 6,
+      "guidanceType": "outcome",
+      "gradedProperty": "Chromium web security remains enabled and a strict Content Security Policy constrains script execution, framing, and network origins.",
+      "attackSurface": "Disabled web security or permissive CSP removes browser-level origin isolation and makes cross-site scripting significantly more severe.",
+      "whatToFix": "Keep web security enforced across all windows and restrict script, object, frame, and network sources with a strict Content Security Policy."
+    },
+    {
+      "id": "IS-03",
+      "domain": "isolation",
+      "title": "Electron Compile-Time Binary Fuses",
+      "goldStar": true,
+      "goldStarLabel": "Hardened Electron Fuses",
+      "stacks": ["electron"],
+      "weight": 5,
+      "guidanceType": "outcome",
+      "gradedProperty": "Packaged Electron binaries disable dangerous runtime toggles (such as RunAsNode, NODE_OPTIONS, and CLI debugging flags) and restrict app loading to packaged archives.",
+      "attackSurface": "Default Electron binaries can be abused as a signed Node.js runtime or injected via environment variables to execute arbitrary code under a trusted signature.",
+      "whatToFix": "Harden packaged Electron binaries before signing so Node-runtime bypasses, environment-driven script injection, and unsigned external code loading are disabled."
+    },
+    {
+      "id": "IS-04",
+      "domain": "isolation",
+      "title": "Tauri Capability Scoping & CSP",
+      "goldStar": true,
+      "goldStarLabel": "Scoped Tauri Capabilities",
+      "stacks": ["tauri"],
+      "weight": 12,
+      "guidanceType": "outcome",
+      "gradedProperty": "Tauri configuration defines a restrictive Content Security Policy and scopes filesystem, shell, and IPC capabilities to minimal required operations.",
+      "attackSurface": "Null CSP or overly broad shell/filesystem capabilities allow compromised webview content to read arbitrary files or execute OS commands.",
+      "whatToFix": "Enforce a non-null Content Security Policy and narrow Tauri capabilities so webviews cannot access unrestricted shell or filesystem scopes."
+    },
+    {
+      "id": "IS-05",
+      "domain": "isolation",
+      "title": "Navigation, External URL & Command Execution Boundaries",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 7,
+      "guidanceType": "outcome",
+      "gradedProperty": "External URL launches, navigation handlers, and OS process invocations validate schemes/inputs and avoid shell-interpolated execution of untrusted data.",
+      "attackSurface": "Unvalidated URL schemes (file://, smb://, custom handlers) or shell-expanded arguments enable command injection and local file execution.",
+      "whatToFix": "Restrict outbound URL launches and navigation targets to allowlisted schemes/origins, and eliminate shell-interpolated command invocation on untrusted inputs."
+    },
+    {
+      "id": "PR-01",
+      "domain": "privileges",
+      "title": "Least-Privilege Execution & Directory ACL Hardening",
+      "goldStar": true,
+      "goldStarLabel": "Locked Service & Install ACLs",
+      "stacks": ["generic"],
+      "weight": 8,
+      "guidanceType": "outcome",
+      "gradedProperty": "Elevated services, installers, and shared application directories restrict write access strictly to administrative/service principals rather than standard users.",
+      "attackSurface": "World-writable config files, binaries, or service directories read by elevated processes create a direct local privilege escalation (LPE) and secret-exposure vector.",
+      "whatToFix": "Ensure elevated components and their configuration/binary directories deny write access to unprivileged local users, keeping user-writable data strictly separated from privileged paths."
+    },
+    {
+      "id": "PR-02",
+      "domain": "privileges",
+      "title": "Installer & Bundled Service Boundary Hygiene",
+      "goldStar": false,
+      "stacks": ["native-windows", "electron", "dotnet", "python-desktop"],
+      "weight": 7,
+      "guidanceType": "outcome",
+      "gradedProperty": "Installers avoid insecure binary search paths, unquoted service invocations, and overly permissive firewall or registry changes.",
+      "attackSurface": "Insecure installer scripting can introduce DLL hijacking, unquoted service path escalation, or lingering privileged footholds.",
+      "whatToFix": "Ensure installer definitions and service registrations quote executable paths, avoid broad permission grants, and cleanly tear down privileged components on uninstall."
+    },
+    {
+      "id": "PR-03",
+      "domain": "privileges",
+      "title": "macOS Hardened Runtime & Minimal Entitlements",
+      "goldStar": false,
+      "stacks": ["native-macos"],
+      "weight": 7,
+      "guidanceType": "outcome",
+      "gradedProperty": "macOS builds enable Hardened Runtime and avoid dangerous entitlements such as disabled library validation or unsigned executable memory unless strictly justified.",
+      "attackSurface": "Relaxed macOS entitlements allow dylib injection and undermine Apple Notarization protections.",
+      "whatToFix": "Enable Hardened Runtime and remove unnecessary code-injection or unsigned-memory entitlements from the app bundle."
+    },
+    {
+      "id": "SD-01",
+      "domain": "secrets-network",
+      "title": "Secret Storage & Hardcoded Credential Prevention",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 6,
+      "guidanceType": "outcome",
+      "gradedProperty": "Source code and packaged bundles contain no hardcoded credentials, and runtime secrets rely on OS-backed encryption/keychain storage rather than plaintext files.",
+      "attackSurface": "Embedded tokens or plaintext local secret files can be extracted immediately by any local process or reverse engineer.",
+      "whatToFix": "Remove hardcoded secrets from source and build artifacts, and store sensitive local credentials using OS-protected secret storage."
+    },
+    {
+      "id": "SD-02",
+      "domain": "secrets-network",
+      "title": "Loopback Binding & Local API Origin Enforcement",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 5,
+      "guidanceType": "outcome",
+      "gradedProperty": "Local helper servers and IPC listeners bind strictly to loopback interfaces (127.0.0.1 / ::1) rather than 0.0.0.0 and enforce explicit origin/authentication checks.",
+      "attackSurface": "Local services bound to all interfaces or accepting wildcard CORS origins expose desktop control planes to LAN attackers and malicious web pages.",
+      "whatToFix": "Bind local-only services exclusively to loopback addresses and enforce strict origin and authentication checks on local API endpoints."
+    },
+    {
+      "id": "SD-03",
+      "domain": "secrets-network",
+      "title": "Encrypted Transport & TLS Certificate Validation",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 4,
+      "guidanceType": "outcome",
+      "gradedProperty": "Network communication uses encrypted transport (HTTPS/WSS) without disabling TLS certificate validation.",
+      "attackSurface": "Disabling TLS verification or transmitting sensitive data over plaintext HTTP exposes user sessions and payloads to network interception.",
+      "whatToFix": "Enforce HTTPS/WSS for all external endpoints and eliminate any code paths that disable TLS certificate verification in production."
+    },
+    {
+      "id": "AU-01",
+      "domain": "auto-update",
+      "title": "Authenticated & Integrity-Verified Auto-Updates",
+      "goldStar": true,
+      "goldStarLabel": "Verified Auto-Updates",
+      "stacks": ["generic"],
+      "weight": 6,
+      "guidanceType": "outcome",
+      "gradedProperty": "Auto-update mechanisms fetch metadata and binaries over HTTPS and cryptographically verify package signatures and digests before execution.",
+      "attackSurface": "Unverified update downloads allow man-in-the-middle or CDN compromise to execute arbitrary code on every user's machine.",
+      "whatToFix": "Ensure update delivery uses HTTPS and enforces cryptographic signature and hash verification before installing any update."
+    },
+    {
+      "id": "AU-02",
+      "domain": "auto-update",
+      "title": "Release Channel Separation & Anti-Downgrade Controls",
+      "goldStar": false,
+      "stacks": ["generic"],
+      "weight": 4,
+      "guidanceType": "outcome",
+      "gradedProperty": "Update publishing enforces monotonic version progression and isolates prerelease/beta tracks from stable production feeds.",
+      "attackSurface": "Missing version monotonicity or mixed channels allow rollback attacks to reintroduce previously patched vulnerabilities.",
+      "whatToFix": "Enforce monotonic version checks during release publication and isolate beta/prerelease feeds from stable production users."
+    },
+    {
+      "id": "VT-01",
+      "domain": "verification",
+      "title": "Automated Test Suite Coverage",
+      "goldStar": true,
+      "goldStarLabel": "Automated Test Coverage",
+      "stacks": ["generic"],
+      "weight": 8,
+      "guidanceType": "outcome",
+      "gradedProperty": "The codebase maintains an automated test suite covering core functionality and security boundaries.",
+      "attackSurface": "Without automated tests, security boundaries and regression fixes silently degrade across releases.",
+      "whatToFix": "Establish and maintain automated tests covering critical application logic, input boundaries, and security-sensitive behaviors."
+    },
+    {
+      "id": "VT-02",
+      "domain": "verification",
+      "title": "Continuous CI Security Scanning",
+      "goldStar": true,
+      "goldStarLabel": "Continuous CI Security Gates",
+      "stacks": ["generic"],
+      "weight": 7,
+      "guidanceType": "binary",
+      "gradedProperty": "CI workflows automatically run static security analysis (SAST), secret scanning, and/or dependency auditing on pull requests.",
+      "attackSurface": "Vulnerabilities, leaked secrets, and vulnerable dependencies slip into releases unnoticed without automated PR gates.",
+      "whatToFix": "Add automated SAST (e.g., CodeQL, Semgrep, Bandit), secret scanning (e.g., Gitleaks), and dependency CVE checks to CI pull request workflows."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@hackerzbay/desktop-security-report-card",
+  "version": "1.0.0",
+  "description": "Stack-aware Desktop Security Report Card rubric, CLI scanner, and shareable HTML/Markdown/JSON grader for Electron, Tauri, .NET, Python, and native Windows/macOS apps.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "desktop-security-report-card": "./bin/report-card.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "scan": "node ./bin/report-card.mjs"
+  },
+  "keywords": [
+    "security",
+    "desktop",
+    "electron",
+    "tauri",
+    "dotnet",
+    "report-card",
+    "supply-chain",
+    "authenticode",
+    "slsa",
+    "audit"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hackerz-Bay/desktop-security-report-card.git"
+  }
+}
